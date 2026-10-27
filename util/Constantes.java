@@ -13,4 +13,6 @@ public final class Constantes {
 
     private Constantes() {
     }
+
+    // Ela armazena valores fixos do programa.
 }

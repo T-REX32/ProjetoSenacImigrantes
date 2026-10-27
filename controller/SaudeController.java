@@ -5,6 +5,8 @@ import util.Conexao;
 import util.ErroApi;
 import util.Router;
 
+//gerencia o fluxo de dados e as requisições
+
 public final class SaudeController {
     private SaudeController() {
     }
