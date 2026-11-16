@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Built-By: joseph62926856
+Build-Jdk: 25.0.5
+Created-By: Maven Integration for Eclipse
+
