@@ -8,74 +8,67 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import model.Turma;
-import model.Curso;
-import model.ProfessorVoluntario;
-import model.Imigrante;
-import model.Aula;
+import modelo.dao.aula.AulaDAO;
+import modelo.dao.aula.AulaDAOImpl;
+import modelo.dao.curso.CursoDAO;
+import modelo.dao.curso.CursoDAOImpl;
+import modelo.dao.turma.TurmaDAO;
+import modelo.dao.turma.TurmaDAOImpl;
+import modelo.entidade.aula.Aula;
+import modelo.entidade.curso.Curso;
+import modelo.entidade.turma.Turma;
 
-@WebServlet(urlPatterns = {"/nova-turma"})
+@WebServlet("/turmas/*")
 public class TurmaServlet extends HttpServlet {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
+	private AulaDAO aulaDAO;
+	private CursoDAO cursoDAO;
+	private TurmaDAO turmaDAO;
 
-    protected void doGet(HttpServletRequest request,
-                         HttpServletResponse response)
-            throws ServletException, IOException {
+	@Override
+	public void init() {
+		aulaDAO = new AulaDAOImpl();
+		cursoDAO = new CursoDAOImpl();
+		turmaDAO = new TurmaDAOImpl();
+	}
 
-        request.getRequestDispatcher("turma.jsp")
-               .forward(request, response);
-    }
+	@Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "O cadastro de turma aceita apenas POST.");
+	}
 
-    protected void doPost(HttpServletRequest request,
-                          HttpServletResponse response)
-            throws ServletException, IOException {
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		if (!"/inserir".equals(request.getPathInfo())) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			return;
+		}
 
-        try {
+		request.setCharacterEncoding("UTF-8");
+		Long idCurso;
+		Long idAula;
+		try {
+			idCurso = Long.valueOf(request.getParameter("curso"));
+			idAula = Long.valueOf(request.getParameter("aula"));
+		} catch (NumberFormatException erro) {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Informe IDs numéricos de curso e aula.");
+			return;
+		}
 
-            // Recebendo os IDs do formulário
-            Long idCurso = Long.parseLong(request.getParameter("curso"));
-            Long idProfessor = Long.parseLong(request.getParameter("professor"));
-            Long idAluno = Long.parseLong(request.getParameter("aluno"));
-            Long idAula = Long.parseLong(request.getParameter("aula"));
+		Curso curso = cursoDAO.recuperarCurso(idCurso);
+		Aula aula = aulaDAO.recuperarAula(idAula);
+		if (curso == null || aula == null) {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Curso ou aula não encontrados.");
+			return;
+		}
 
-            // Criando os objetos relacionados
-            Curso curso = new Curso();
-            curso.setId(idCurso);
-
-            ProfessorVoluntario professor = new ProfessorVoluntario();
-            professor.setId(idProfessor);
-
-            Imigrante aluno = new Imigrante();
-            aluno.setId(idAluno);
-
-            Aula aula = new Aula();
-            aula.setId(idAula);
-
-            // Criando a turma
-            Turma turma = new Turma();
-
-            turma.setCurso(curso);
-            turma.setProfessorVoluntario(professor);
-            turma.setAluno(aluno);
-            turma.setAula(aula);
-
-            // Encaminhando o objeto para a próxima etapa
-            request.setAttribute("turma", turma);
-
-            request.setAttribute("mensagem",
-                    "Dados da turma recebidos com sucesso!");
-
-            request.getRequestDispatcher("turma.jsp")
-                   .forward(request, response);
-
-        } catch (NumberFormatException e) {
-
-            request.setAttribute("erro",
-                    "Verifique os IDs informados.");
-
-            request.getRequestDispatcher("turma.jsp")
-                   .forward(request, response);
-        }
-    }
+		Turma turma = new Turma();
+		turma.setCurso(curso);
+		turma.setAula(aula);
+		turmaDAO.inserirTurma(turma);
+		response.setStatus(HttpServletResponse.SC_CREATED);
+	}
 }

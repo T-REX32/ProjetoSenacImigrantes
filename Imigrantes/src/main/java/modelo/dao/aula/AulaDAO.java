@@ -1,16 +1,18 @@
 package modelo.dao.aula;
 
-import modelo.entidade.contato.Aula;
+import java.util.List;
+
+import modelo.entidade.aula.Aula;
 
 public interface AulaDAO {
 
-	void inserirContato(Aula aula);
+	void inserirAula(Aula aula);
 
-//	void deletarContato(Contato contato);
+	void deletarAula(Aula aula);
 
-//	void atualizarContato(Contato contato);
-	
-	//Contato recuperarContato(Contato contato);
+	void atualizarAula(Aula aula);
 
-	//List<Contato> recuperarContatos();
+	Aula recuperarAula(Long id);
+
+	List<Aula> recuperarAulas();
 }

@@ -10,7 +10,7 @@
 
     <h1>Cadastrar Aula</h1>
 
-    <form action="inserir-aula">
+    <form action="${pageContext.request.contextPath}/aulas/inserir" method="post" accept-charset="UTF-8">
 
         <label>Título da aula:</label>
         <input type="text" name="titulo" required>

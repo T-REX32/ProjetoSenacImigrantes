@@ -1,9 +1,7 @@
 package controle.servlet;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -11,102 +9,54 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import modelo.dao.aula.AulaDAO;
+import modelo.dao.aula.AulaDAOImpl;
+import modelo.entidade.aula.Aula;
 
-@WebServlet(urlPatterns = {"/nova-aula"})
+@WebServlet("/aulas/*")
 public class AulaServlet extends HttpServlet {
-	
+
 	private static final long serialVersionUID = 1L;
-	private AulaDAO dao;
+	private AulaDAO aulaDAO;
 
+	@Override
 	public void init() {
-//		dao = new ContatoDAOImpl();
+		aulaDAO = new AulaDAOImpl();
 	}
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		doGet(request, response);
-	}
-
+	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-
-		String action = request.getServletPath();
-
-		try {
-			
-			switch (action) {
-			
-			case "/nova-aula":
-				mostrarNovaAula(request, response);
-				break;
-				
-			case "/inserir-aula":
-				inserirAula(request, response);
-				break;
-				
-			case "/deletar-aula":
-				deletarAula(request, response);
-				break;
-				
-			case "/editar-aula":
-				mostrarFormularioEditarAula(request, response);
-				break;
-				
-			case "/atualizar-aula":
-				atualizarAula(request, response);
-				break;
-				
-			
-			}
-
-		} catch (SQLException ex) {
-			throw new ServletException(ex);
+		if ("/novo".equals(request.getPathInfo())) {
+			request.getRequestDispatcher("/aula.jsp").forward(request, response);
+			return;
 		}
+
+		response.sendError(HttpServletResponse.SC_NOT_FOUND);
 	}
 
-	
-
-	private void mostrarNovaAula(HttpServletRequest request, HttpServletResponse response)
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		
-		RequestDispatcher dispatcher = request.getRequestDispatcher("aula.jsp");
-		dispatcher.forward(request, response);
-	}
+		if (!"/inserir".equals(request.getPathInfo())) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			return;
+		}
 
-	private void mostrarFormularioEditarAula(HttpServletRequest request, HttpServletResponse response)
-			throws SQLException, ServletException, IOException {
-		
-		long id = Long.parseLong(request.getParameter("id"));
-//		Contato contato = dao.recuperarAula(new Aula(id));
-//		request.setAttribute("aula", contato);
-		RequestDispatcher dispatcher = request.getRequestDispatcher("form-contato.jsp");
-		dispatcher.forward(request, response);
-	}
-
-	private void inserirAula(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
-		
+		request.setCharacterEncoding("UTF-8");
 		String titulo = request.getParameter("titulo");
 		String data = request.getParameter("data");
 		String curso = request.getParameter("curso");
-		dao.inserirAula(new Contato(titulo, data));
-		response.sendRedirect("listar");
+		if (estaVazio(titulo) || estaVazio(data) || estaVazio(curso)) {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Preencha todos os campos da aula.");
+			return;
+		}
+
+		aulaDAO.inserirAula(new Aula(titulo.trim(), data.trim(), curso.trim()));
+
+		response.sendRedirect(request.getContextPath() + "/aulas/novo?status=sucesso");
 	}
 
-	private void atualizarAula(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
-		
-		long id = Long.parseLong(request.getParameter("id"));
-		String telefone = request.getParameter("titulo");
-		String email = request.getParameter("data");
-//		dao.atualizarAula(new Contato(id,titulo, data));
-		response.sendRedirect("listar");
-	}
-
-	private void deletarAula(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
-		
-		long id = Long.parseLong(request.getParameter("id"));
-//		Contato contato = dao.recuperarContato(new Contato(id));
-//		dao.deletarAula(contato);
-		response.sendRedirect("listar");
-		
+	private boolean estaVazio(String valor) {
+		return valor == null || valor.trim().isEmpty();
 	}
 }
