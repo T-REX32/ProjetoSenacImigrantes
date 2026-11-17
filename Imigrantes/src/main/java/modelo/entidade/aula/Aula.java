@@ -1,81 +1,83 @@
 package modelo.entidade.aula;
 
-import java.io.Serializable;
+public class Aula {
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+    private Long id;
+    private String titulo;
+    private String conteudo;
+    private Integer duracaoMinutos;
+    private Long trilhaId;
+    private Long professorVoluntarioId;
+    private boolean disponivel;
 
-@Entity
-@Table(name = "aula")
-public class Aula implements Serializable {
+    public Aula() {
+    }
 
-	private static final long serialVersionUID = 1L;
+    public Aula(Long id, String titulo, String conteudo,
+                Integer duracaoMinutos) {
+        this.id = id;
+        this.titulo = titulo;
+        this.conteudo = conteudo;
+        this.duracaoMinutos = duracaoMinutos;
+    }
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id_aula")
-	private Long id;
+    public Long getId() {
+        return id;
+    }
 
-	@Column(name = "titulo", nullable = false, length = 150)
-	private String titulo;
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	@Column(name = "data_aula", nullable = false, length = 10)
-	private String data;
+    public String getTitulo() {
+        return titulo;
+    }
 
-	@Column(name = "curso", nullable = false, length = 150)
-	private String curso;
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
 
-	public Aula() {
-	}
+    public String getConteudo() {
+        return conteudo;
+    }
 
-	public Aula(Long id) {
-		this.id = id;
-	}
+    public void setConteudo(String conteudo) {
+        this.conteudo = conteudo;
+    }
 
-	public Aula(String titulo, String data, String curso) {
-		this.titulo = titulo;
-		this.data = data;
-		this.curso = curso;
-	}
+    public Integer getDuracaoMinutos() {
+        return duracaoMinutos;
+    }
 
-	public Aula(Long id, String titulo, String data, String curso) {
-		this(titulo, data, curso);
-		this.id = id;
-	}
+    public void setDuracaoMinutos(Integer duracaoMinutos) {
+        this.duracaoMinutos = duracaoMinutos;
+    }
 
-	public Long getId() {
-		return id;
-	}
+    public Long getTrilhaId() {
+        return trilhaId;
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public void setTrilhaId(Long trilhaId) {
+        this.trilhaId = trilhaId;
+    }
 
-	public String getTitulo() {
-		return titulo;
-	}
+    public Long getProfessorVoluntarioId() {
+        return professorVoluntarioId;
+    }
 
-	public void setTitulo(String titulo) {
-		this.titulo = titulo;
-	}
+    public void setProfessorVoluntarioId(Long professorVoluntarioId) {
+        this.professorVoluntarioId = professorVoluntarioId;
+    }
 
-	public String getData() {
-		return data;
-	}
+    public boolean isDisponivel() {
+        return disponivel;
+    }
 
-	public void setData(String data) {
-		this.data = data;
-	}
+    public void setDisponivel(boolean disponivel) {
+        this.disponivel = disponivel;
+    }
 
-	public String getCurso() {
-		return curso;
-	}
-
-	public void setCurso(String curso) {
-		this.curso = curso;
-	}
+    public void disponibilizar() {
+        disponivel = true;
+    }
 }

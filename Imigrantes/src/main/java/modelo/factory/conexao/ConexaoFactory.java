@@ -1,44 +1,27 @@
 package modelo.factory.conexao;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.service.ServiceRegistry;
-
-import modelo.entidade.aula.Aula;
-import modelo.entidade.curso.Curso;
-import modelo.entidade.trilha.Trilha;
-import modelo.entidade.turma.Turma;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class ConexaoFactory {
 
-	public SessionFactory getConexao() {
-		return SessionFactoryHolder.SESSION_FACTORY;
-	}
+    public Connection getConexao() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("Driver do MySQL não foi encontrado na aplicação!", e);
+        }
 
-	private static SessionFactory criarSessionFactory() {
-		Configuration configuracao = new Configuration();
-		configuracao.configure("hibernate.cfg.xml");
-		configuracao.addAnnotatedClass(Aula.class);
-		configuracao.addAnnotatedClass(Curso.class);
-		configuracao.addAnnotatedClass(Trilha.class);
-		configuracao.addAnnotatedClass(Turma.class);
-		configuracao.setProperty("hibernate.connection.username", requiredEnvironmentVariable("DB_USERNAME"));
-		configuracao.setProperty("hibernate.connection.password", requiredEnvironmentVariable("DB_PASSWORD"));
+        String url = variavelAmbiente("IMIGRANTES_DB_URL",
+                "jdbc:mysql://localhost:3306/Imigrantes?useTimezone=true&serverTimezone=UTC");
+        String usuario = variavelAmbiente("IMIGRANTES_DB_USER", "root");
+        String senha = variavelAmbiente("IMIGRANTES_DB_PASSWORD", "root");
+        return DriverManager.getConnection(url, usuario, senha);
+    }
 
-		ServiceRegistry servico = new StandardServiceRegistryBuilder().applySettings(configuracao.getProperties()).build();
-		return configuracao.buildSessionFactory(servico);
-	}
-
-	private static String requiredEnvironmentVariable(String name) {
-		String value = System.getenv(name);
-		if (value == null || value.trim().isEmpty()) {
-			throw new IllegalStateException("Required environment variable " + name + " is not set.");
-		}
-		return value;
-	}
-
-	private static class SessionFactoryHolder {
-		private static final SessionFactory SESSION_FACTORY = criarSessionFactory();
-	}
+    private String variavelAmbiente(String nome, String padrao) {
+        String valor = System.getenv(nome);
+        return valor == null || valor.trim().isEmpty() ? padrao : valor.trim();
+    }
 }

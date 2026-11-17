@@ -1,72 +1,40 @@
 package modelo.entidade.curso;
 
-import java.io.Serializable;
+public class Curso {
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+    private Long id;
+    private String titulo;
+    private String descricao;
+    private Integer quantTurma;
 
-import modelo.entidade.trilha.Trilha;
+    public Curso() {}
 
-@Entity
-@Table(name = "curso")
-public class Curso implements Serializable {
+    public Curso(Long id) {
+        this.id = id;
+    }
 
-	private static final long serialVersionUID = 1L;
+    public Curso(String titulo, String descricao, Integer quantTurma) {
+        this.titulo = titulo;
+        this.descricao = descricao;
+        this.quantTurma = quantTurma;
+    }
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id_curso")
-	private Long id;
+    public Curso(Long id, String titulo, String descricao, Integer quantTurma) {
+        this.id = id;
+        this.titulo = titulo;
+        this.descricao = descricao;
+        this.quantTurma = quantTurma;
+    }
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "id_trilha", nullable = false)
-	private Trilha trilha;
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-	@Column(name = "titulo", nullable = false, length = 150)
-	private String titulo;
+    public String getTitulo() { return titulo; }
+    public void setTitulo(String titulo) { this.titulo = titulo; }
 
-	@Column(name = "descricao", length = 255)
-	private String descricao;
+    public String getDescricao() { return descricao; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
 
-	public Curso() {
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public Trilha getTrilha() {
-		return trilha;
-	}
-
-	public void setTrilha(Trilha trilha) {
-		this.trilha = trilha;
-	}
-
-	public String getTitulo() {
-		return titulo;
-	}
-
-	public void setTitulo(String titulo) {
-		this.titulo = titulo;
-	}
-
-	public String getDescricao() {
-		return descricao;
-	}
-
-	public void setDescricao(String descricao) {
-		this.descricao = descricao;
-	}
+    public Integer getQuantTurma() { return quantTurma; }
+    public void setQuantTurma(Integer quantTurma) { this.quantTurma = quantTurma; }
 }

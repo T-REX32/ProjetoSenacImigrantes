@@ -12,7 +12,7 @@ public interface CursoDAO {
 
 	void atualizarCurso(Curso curso);
 
-	Curso recuperarCurso(Long id);
+	Curso recuperarCurso(Curso curso);
 
 	List<Curso> recuperarCursos();
 }

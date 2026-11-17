@@ -1,62 +1,143 @@
 package controle.servlet;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import modelo.dao.aula.AulaDAO;
 import modelo.dao.aula.AulaDAOImpl;
 import modelo.entidade.aula.Aula;
 
-@WebServlet("/aulas/*")
+@WebServlet(urlPatterns = {"/nova-aula", "/editar-aula", "/inserir-aula", "/deletar-aula", "/atualizar-aula", "/listar"})
 public class AulaServlet extends HttpServlet {
 
-	private static final long serialVersionUID = 1L;
-	private AulaDAO aulaDAO;
+    private static final long serialVersionUID = 1L;
+    private AulaDAOImpl dao;
 
-	@Override
-	public void init() {
-		aulaDAO = new AulaDAOImpl();
-	}
+    @Override
+    public void init() {
+        dao = new AulaDAOImpl();
+    }
 
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		if ("/novo".equals(request.getPathInfo())) {
-			request.getRequestDispatcher("/aula.jsp").forward(request, response);
-			return;
-		}
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        String action = request.getServletPath();
+        try {
+            switch (action) {
+                case "/inserir-aula":
+                    inserirAula(request, response);
+                    break;
+                case "/deletar-aula":
+                    deletarAula(request, response);
+                    break;
+                case "/atualizar-aula":
+                    atualizarAula(request, response);
+                    break;
+                default:
+                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    break;
+            }
+        } catch (SQLException ex) {
+            throw new ServletException(ex);
+        }
+    }
 
-		response.sendError(HttpServletResponse.SC_NOT_FOUND);
-	}
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        String action = request.getServletPath();
 
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		if (!"/inserir".equals(request.getPathInfo())) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
-			return;
-		}
+        try {
+            switch (action) {
+                case "/nova-aula":
+                    mostrarNovaAula(request, response);
+                    break;
+                case "/editar-aula":
+                    mostrarFormularioEditarAula(request, response);
+                    break;
+                case "/inserir-aula":
+                case "/deletar-aula":
+                case "/atualizar-aula":
+                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    break;
+                case "/listar":
+                    listarAulas(request, response);
+                    break;
+                default:
+                    listarAulas(request, response);
+                    break;
+            }
+        } catch (SQLException ex) {
+            throw new ServletException(ex);
+        }
+    }
 
-		request.setCharacterEncoding("UTF-8");
-		String titulo = request.getParameter("titulo");
-		String data = request.getParameter("data");
-		String curso = request.getParameter("curso");
-		if (estaVazio(titulo) || estaVazio(data) || estaVazio(curso)) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Preencha todos os campos da aula.");
-			return;
-		}
+    private void mostrarNovaAula(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        RequestDispatcher dispatcher = request.getRequestDispatcher("aula.jsp");
+        dispatcher.forward(request, response);
+    }
 
-		aulaDAO.inserirAula(new Aula(titulo.trim(), data.trim(), curso.trim()));
+    private void mostrarFormularioEditarAula(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        Long id = Long.parseLong(request.getParameter("id"));
+        Aula aula = dao.recuperarAula(new Aula(id, null, null, null));
+        request.setAttribute("aula", aula);
 
-		response.sendRedirect(request.getContextPath() + "/aulas/novo?status=sucesso");
-	}
+        RequestDispatcher dispatcher = request.getRequestDispatcher("aula.jsp");
+        dispatcher.forward(request, response);
+    }
 
-	private boolean estaVazio(String valor) {
-		return valor == null || valor.trim().isEmpty();
-	}
+    private void inserirAula(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        String titulo = request.getParameter("titulo");
+        String conteudo = request.getParameter("conteudo");
+        Integer duracaoMinutos = Integer.parseInt(request.getParameter("duracaoMinutos"));
+
+        dao.inserirAula(new Aula(null, titulo, conteudo, duracaoMinutos));
+        response.sendRedirect("listar");
+    }
+
+    private void atualizarAula(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        Long id = Long.parseLong(request.getParameter("id"));
+        String titulo = request.getParameter("titulo");
+        String conteudo = request.getParameter("conteudo");
+        Integer duracaoMinutos = Integer.parseInt(request.getParameter("duracaoMinutos"));
+
+        Aula aulaAtual = dao.recuperarAula(new Aula(id, null, null, null));
+        Aula aula = new Aula(id, titulo, conteudo, duracaoMinutos);
+        if (aulaAtual != null) {
+            aula.setTrilhaId(aulaAtual.getTrilhaId());
+            aula.setProfessorVoluntarioId(aulaAtual.getProfessorVoluntarioId());
+            aula.setDisponivel(aulaAtual.isDisponivel());
+        }
+        dao.atualizarAula(aula);
+        response.sendRedirect("listar");
+    }
+
+    private void deletarAula(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        Long id = Long.parseLong(request.getParameter("id"));
+        dao.deletarAula(new Aula(id, null, null, null));
+
+        response.sendRedirect("listar");
+    }
+
+    private void listarAulas(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
+        List<Aula> listaAulas = dao.listarAulas();
+        request.setAttribute("listaAulas", listaAulas);
+
+        RequestDispatcher dispatcher = request.getRequestDispatcher("listar-aulas.jsp");
+        dispatcher.forward(request, response);
+    }
 }

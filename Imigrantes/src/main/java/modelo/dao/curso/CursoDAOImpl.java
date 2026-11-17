@@ -1,135 +1,104 @@
 package modelo.dao.curso;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
-
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
-import org.hibernate.Session;
 
 import modelo.entidade.curso.Curso;
 import modelo.factory.conexao.ConexaoFactory;
 
 public class CursoDAOImpl implements CursoDAO {
 
-	private ConexaoFactory fabrica;
+    private ConexaoFactory fabrica;
 
-	public CursoDAOImpl() {
-		fabrica = new ConexaoFactory();
-	}
+    public CursoDAOImpl() {
+        fabrica = new ConexaoFactory();
+    }
 
-	@Override
-	public void inserirCurso(Curso curso) {
-		Session sessao = null;
-		try {
-			sessao = fabrica.getConexao().openSession();
-			sessao.beginTransaction();
-			sessao.save(curso);
-			sessao.getTransaction().commit();
-		} catch (RuntimeException erro) {
-			erro.printStackTrace();
-			if (sessao != null && sessao.getTransaction() != null
-					&& sessao.getTransaction().isActive()) {
-				sessao.getTransaction().rollback();
-			}
-			throw erro;
-		} finally {
-			if (sessao != null) {
-				sessao.close();
-			}
-		}
-	}
+    @Override
+    public void inserirCurso(Curso curso) {
+        String sql = "INSERT INTO app_curso (titulo, descricao, quant_turma) VALUES (?, ?, ?)";
+        try (Connection conexao = fabrica.getConexao();
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+            ps.setString(1, curso.getTitulo());
+            ps.setString(2, curso.getDescricao());
+            ps.setInt(3, curso.getQuantTurma());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao inserir curso.", e);
+        }
+    }
 
-	@Override
-	public void deletarCurso(Curso curso) {
-		Session sessao = null;
-		try {
-			sessao = fabrica.getConexao().openSession();
-			sessao.beginTransaction();
-			sessao.delete(curso);
-			sessao.getTransaction().commit();
-		} catch (RuntimeException erro) {
-			erro.printStackTrace();
-			if (sessao != null && sessao.getTransaction() != null
-					&& sessao.getTransaction().isActive()) {
-				sessao.getTransaction().rollback();
-			}
-			throw erro;
-		} finally {
-			if (sessao != null) {
-				sessao.close();
-			}
-		}
-	}
+    @Override
+    public void deletarCurso(Curso curso) {
+        String sql = "DELETE FROM app_curso WHERE id = ?";
+        try (Connection conexao = fabrica.getConexao();
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+            ps.setLong(1, curso.getId());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao deletar curso.", e);
+        }
+    }
 
-	@Override
-	public void atualizarCurso(Curso curso) {
-		Session sessao = null;
-		try {
-			sessao = fabrica.getConexao().openSession();
-			sessao.beginTransaction();
-			sessao.update(curso);
-			sessao.getTransaction().commit();
-		} catch (RuntimeException erro) {
-			erro.printStackTrace();
-			if (sessao != null && sessao.getTransaction() != null
-					&& sessao.getTransaction().isActive()) {
-				sessao.getTransaction().rollback();
-			}
-			throw erro;
-		} finally {
-			if (sessao != null) {
-				sessao.close();
-			}
-		}
-	}
+    @Override
+    public void atualizarCurso(Curso curso) {
+        String sql = "UPDATE app_curso SET titulo = ?, descricao = ?, quant_turma = ? WHERE id = ?";
+        try (Connection conexao = fabrica.getConexao();
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+            ps.setString(1, curso.getTitulo());
+            ps.setString(2, curso.getDescricao());
+            ps.setInt(3, curso.getQuantTurma());
+            ps.setLong(4, curso.getId());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao atualizar curso.", e);
+        }
+    }
 
-	@Override
-	public Curso recuperarCurso(Long id) {
-		Session sessao = null;
-		Curso curso = null;
-		try {
-			sessao = fabrica.getConexao().openSession();
-			CriteriaBuilder construtor = sessao.getCriteriaBuilder();
-			CriteriaQuery<Curso> criteria = construtor.createQuery(Curso.class);
-			Root<Curso> raizCurso = criteria.from(Curso.class);
-			criteria.select(raizCurso);
-			criteria.where(construtor.equal(raizCurso.get("id"), id));
-			List<Curso> cursos = sessao.createQuery(criteria).getResultList();
-			if (!cursos.isEmpty()) {
-				curso = cursos.get(0);
-			}
-		} catch (RuntimeException erro) {
-			erro.printStackTrace();
-			throw erro;
-		} finally {
-			if (sessao != null) {
-				sessao.close();
-			}
-		}
-		return curso;
-	}
+    @Override
+    public Curso recuperarCurso(Curso curso) {
+        String sql = "SELECT id, titulo, descricao, quant_turma FROM app_curso WHERE id = ?";
+        Curso c = null;
+        try (Connection conexao = fabrica.getConexao();
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+            ps.setLong(1, curso.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    c = new Curso();
+                    c.setId(rs.getLong("id"));
+                    c.setTitulo(rs.getString("titulo"));
+                    c.setDescricao(rs.getString("descricao"));
+                    c.setQuantTurma(rs.getInt("quant_turma"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao recuperar curso.", e);
+        }
+        return c;
+    }
 
-	@Override
-	public List<Curso> recuperarCursos() {
-		Session sessao = null;
-		List<Curso> cursos = null;
-		try {
-			sessao = fabrica.getConexao().openSession();
-			CriteriaBuilder construtor = sessao.getCriteriaBuilder();
-			CriteriaQuery<Curso> criteria = construtor.createQuery(Curso.class);
-			Root<Curso> raizCurso = criteria.from(Curso.class);
-			criteria.select(raizCurso);
-			cursos = sessao.createQuery(criteria).getResultList();
-		} catch (RuntimeException erro) {
-			erro.printStackTrace();
-			throw erro;
-		} finally {
-			if (sessao != null) {
-				sessao.close();
-			}
-		}
-		return cursos;
-	}
+    @Override
+    public List<Curso> recuperarCursos() {
+        List<Curso> lista = new ArrayList<>();
+        String sql = "SELECT id, titulo, descricao, quant_turma FROM app_curso";
+        try (Connection conexao = fabrica.getConexao();
+             PreparedStatement ps = conexao.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Curso c = new Curso();
+                c.setId(rs.getLong("id"));
+                c.setTitulo(rs.getString("titulo"));
+                c.setDescricao(rs.getString("descricao"));
+                c.setQuantTurma(rs.getInt("quant_turma"));
+                lista.add(c);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao listar cursos.", e);
+        }
+        return lista;
+    }
 }
