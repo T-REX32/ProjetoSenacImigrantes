@@ -1,0 +1,5 @@
+modelo\entidade\contato\Aula.class
+controle\servlet\AulaServlet.class
+modelo\dao\aula\AulaDAO.class
+modelo\dao\aula\AulaDAOImpl.class
+modelo\factory\conexao\ConexaoFactory.class
