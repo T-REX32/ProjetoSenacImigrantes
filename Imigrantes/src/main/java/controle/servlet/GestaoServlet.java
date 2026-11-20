@@ -14,13 +14,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import controle.seguranca.PermissaoUsuario;
 import modelo.dao.dominio.CampoDominio;
-import modelo.dao.dominio.DominioDAO;
 import modelo.dao.dominio.ModuloDominio;
+import modelo.dao.gestao.GestaoDAO;
 
 @WebServlet(urlPatterns = {"/gestao", "/gestao/*"})
 public class GestaoServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private final DominioDAO dao = new DominioDAO();
+    private final GestaoDAO dao = new GestaoDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)

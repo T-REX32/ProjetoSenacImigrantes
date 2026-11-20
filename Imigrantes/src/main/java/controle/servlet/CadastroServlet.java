@@ -9,12 +9,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import modelo.dao.dominio.DominioDAO;
+import modelo.dao.usuario.CadastroDAO;
 
 @WebServlet("/cadastro")
 public class CadastroServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private final DominioDAO dao = new DominioDAO();
+    private final CadastroDAO dao = new CadastroDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)

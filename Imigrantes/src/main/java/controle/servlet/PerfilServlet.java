@@ -10,12 +10,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import modelo.dao.dominio.DominioDAO;
+import modelo.dao.usuario.PerfilDAO;
 
 @WebServlet("/perfil")
 public class PerfilServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private final DominioDAO dao = new DominioDAO();
+    private final PerfilDAO dao = new PerfilDAO();
 
     @Override
     @SuppressWarnings("unchecked")

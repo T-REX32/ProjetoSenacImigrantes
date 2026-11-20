@@ -16,11 +16,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import controle.seguranca.PermissaoUsuario;
-import modelo.dao.dominio.DominioDAO;
+import modelo.dao.usuario.AutenticacaoDAO;
 
 @WebFilter(urlPatterns = "/*")
 public class AutenticacaoFilter implements Filter {
-    private final DominioDAO dao = new DominioDAO();
+    private final AutenticacaoDAO dao = new AutenticacaoDAO();
 
     @Override
     public void init(FilterConfig filterConfig) {

@@ -11,12 +11,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import modelo.dao.dominio.DominioDAO;
+import modelo.dao.formulario.FormularioInicialDAO;
 
 @WebServlet("/formulario-inicial")
 public class FormularioInicialServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private final DominioDAO dao = new DominioDAO();
+    private final FormularioInicialDAO dao = new FormularioInicialDAO();
 
     @Override
     @SuppressWarnings("unchecked")
@@ -25,7 +25,7 @@ public class FormularioInicialServlet extends HttpServlet {
         Map<String, Object> usuario = (Map<String, Object>) request.getSession(false)
                 .getAttribute("usuarioLogado");
         try {
-            Map<String, Object> dados = dao.recuperarFormularioInicial(
+            Map<String, Object> dados = dao.recuperar(
                     ((Number) usuario.get("id")).longValue());
             if (dados == null) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -51,7 +51,7 @@ public class FormularioInicialServlet extends HttpServlet {
                 .getAttribute("usuarioLogado");
         long usuarioId = ((Number) usuario.get("id")).longValue();
         try {
-            dao.salvarFormularioInicial(usuarioId, request.getParameter("pais_origem"),
+            dao.salvar(usuarioId, request.getParameter("pais_origem"),
                     request.getParameter("idioma_preferido"), request.getParameter("escolaridade"),
                     request.getParameter("experiencia_profissional"),
                     request.getParameter("objetivo_profissional"));

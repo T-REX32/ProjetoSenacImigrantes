@@ -10,12 +10,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import modelo.dao.dominio.DominioDAO;
+import modelo.dao.usuario.AutenticacaoDAO;
 
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private final DominioDAO dao = new DominioDAO();
+    private final AutenticacaoDAO dao = new AutenticacaoDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
