@@ -38,17 +38,207 @@ public class DominioDAO {
     }
 
     public List<Map<String, Object>> listar(ModuloDominio modulo) throws SQLException {
+        return listar(modulo, null, 0);
+    }
+
+    public List<Map<String, Object>> listar(ModuloDominio modulo, String perfil, long usuarioId)
+            throws SQLException {
         List<Map<String, Object>> registros = new ArrayList<>();
+        String filtro = "";
+        if ("IMIGRANTE".equals(perfil) && "trilhas".equals(modulo.getCodigo())) {
+            filtro = " WHERE publicada = TRUE";
+        } else if ("IMIGRANTE".equals(perfil) && "aulas".equals(modulo.getCodigo())) {
+            filtro = " WHERE disponivel = TRUE AND (trilha_id IS NULL OR trilha_id IN "
+                    + "(SELECT id FROM app_trilha WHERE publicada = TRUE))";
+        } else if ("IMIGRANTE".equals(perfil) && "anuncios".equals(modulo.getCodigo())) {
+            filtro = " WHERE ativo = TRUE";
+        } else if ("PROFESSOR_VOLUNTARIO".equals(perfil) && "aulas".equals(modulo.getCodigo())) {
+            filtro = " WHERE professor_voluntario_id = ?";
+        } else if ("REPRESENTANTE".equals(perfil) && "salas".equals(modulo.getCodigo())) {
+            filtro = " WHERE representante_id = ?";
+        } else if ("REPRESENTANTE".equals(perfil) && "horarios".equals(modulo.getCodigo())) {
+            filtro = " WHERE sala_id IN (SELECT id FROM app_sala WHERE representante_id = ?)";
+        }
         String sql = "SELECT " + colunasSql(modulo) + " FROM " + identificador(modulo.getTabela())
-                + " ORDER BY " + identificador(modulo.getChave()) + " DESC";
+                + filtro + " ORDER BY " + identificador(modulo.getChave()) + " DESC";
         try (Connection conexao = fabrica.getConexao();
-             PreparedStatement ps = conexao.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+            if (!filtro.isEmpty() && !"IMIGRANTE".equals(perfil)) {
+                ps.setLong(1, usuarioId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 registros.add(mapear(rs, modulo));
             }
+            }
         }
         return registros;
+    }
+
+    public boolean representantePossuiSala(long representanteId, long salaId) throws SQLException {
+        try (Connection conexao = fabrica.getConexao();
+             PreparedStatement ps = conexao.prepareStatement(
+                     "SELECT 1 FROM app_sala WHERE id = ? AND representante_id = ?")) {
+            ps.setLong(1, salaId);
+            ps.setLong(2, representanteId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    public Map<String, Object> recuperarPerfil(long usuarioId) throws SQLException {
+            String sql = "SELECT nome, email, cpf, telefone, perfil FROM app_usuario WHERE id = ?";
+            try (Connection conexao = fabrica.getConexao();
+                 PreparedStatement ps = conexao.prepareStatement(sql)) {
+                ps.setLong(1, usuarioId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        return null;
+                    }
+                    Map<String, Object> perfil = new LinkedHashMap<>();
+                    perfil.put("nome", rs.getString("nome"));
+                    perfil.put("email", rs.getString("email"));
+                    perfil.put("cpf", rs.getString("cpf"));
+                    perfil.put("telefone", rs.getString("telefone"));
+                    perfil.put("perfil", rs.getString("perfil"));
+                    return perfil;
+                }
+            }
+    }
+
+    public void atualizarPerfil(long usuarioId, String nome, String senhaAtual, String novaSenha,
+                String confirmarSenha) throws SQLException {
+            if (nome == null || nome.trim().length() < 3 || nome.trim().length() > 150) {
+                throw new IllegalArgumentException("Informe seu nome completo.");
+            }
+            boolean alterarSenha = novaSenha != null && !novaSenha.isEmpty();
+            if (alterarSenha && novaSenha.length() < 8) {
+                throw new IllegalArgumentException("A nova senha deve ter pelo menos 8 caracteres.");
+            }
+            if (alterarSenha && !novaSenha.equals(confirmarSenha)) {
+                throw new IllegalArgumentException("A confirmação da nova senha não confere.");
+            }
+
+            try (Connection conexao = fabrica.getConexao()) {
+                boolean autoCommit = conexao.getAutoCommit();
+                conexao.setAutoCommit(false);
+                try {
+                    String nomeAtual;
+                    if (alterarSenha) {
+                        try (PreparedStatement ps = conexao.prepareStatement(
+                                "SELECT nome, senha_hash, senha_salt FROM app_usuario WHERE id = ? FOR UPDATE")) {
+                            ps.setLong(1, usuarioId);
+                            try (ResultSet rs = ps.executeQuery()) {
+                                if (!rs.next()) {
+                                    throw new IllegalArgumentException("Conta não encontrada.");
+                                }
+                                nomeAtual = rs.getString("nome");
+                                if (senhaAtual == null || !SenhaUtil.verificar(
+                                        senhaAtual, rs.getString("senha_salt"), rs.getString("senha_hash"))) {
+                                    throw new IllegalArgumentException("A senha atual está incorreta.");
+                                }
+                            }
+                        }
+                    } else {
+                        try (PreparedStatement ps = conexao.prepareStatement(
+                                "SELECT nome FROM app_usuario WHERE id = ? FOR UPDATE")) {
+                            ps.setLong(1, usuarioId);
+                            try (ResultSet rs = ps.executeQuery()) {
+                                if (!rs.next()) {
+                                    throw new IllegalArgumentException("Conta não encontrada.");
+                                }
+                                nomeAtual = rs.getString("nome");
+                            }
+                        }
+                    }
+
+                    if (!nomeAtual.equals(nome.trim())) {
+                        try (PreparedStatement ps = conexao.prepareStatement(
+                                "UPDATE app_usuario SET nome = ? WHERE id = ?")) {
+                            ps.setString(1, nome.trim());
+                            ps.setLong(2, usuarioId);
+                            ps.executeUpdate();
+                        }
+                        registrarAuditoria(conexao, usuarioId, "NOME");
+                    }
+                    if (alterarSenha) {
+                        String salt = SenhaUtil.gerarSalt();
+                        try (PreparedStatement ps = conexao.prepareStatement(
+                                "UPDATE app_usuario SET senha_hash = ?, senha_salt = ? WHERE id = ?")) {
+                            ps.setString(1, SenhaUtil.gerarHash(novaSenha, salt));
+                            ps.setString(2, salt);
+                            ps.setLong(3, usuarioId);
+                            ps.executeUpdate();
+                        }
+                        registrarAuditoria(conexao, usuarioId, "SENHA");
+                    }
+                    conexao.commit();
+                } catch (SQLException | RuntimeException e) {
+                    conexao.rollback();
+                    throw e;
+                } finally {
+                    conexao.setAutoCommit(autoCommit);
+                }
+            }
+    }
+
+    private void registrarAuditoria(Connection conexao, long usuarioId, String campo) throws SQLException {
+            try (PreparedStatement ps = conexao.prepareStatement(
+                    "INSERT INTO app_auditoria_perfil (autor_id, campo_alterado) VALUES (?, ?)")) {
+                ps.setLong(1, usuarioId);
+                ps.setString(2, campo);
+                ps.executeUpdate();
+            }
+    }
+
+    public Map<String, Object> recuperarFormularioInicial(long usuarioId) throws SQLException {
+            String sql = "SELECT pais_origem, idioma_preferido, escolaridade, "
+                    + "experiencia_profissional, objetivo_profissional, formulario_preenchido "
+                    + "FROM app_imigrante WHERE usuario_id = ?";
+            try (Connection conexao = fabrica.getConexao();
+                 PreparedStatement ps = conexao.prepareStatement(sql)) {
+                ps.setLong(1, usuarioId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        return null;
+                    }
+                    Map<String, Object> dados = new LinkedHashMap<>();
+                    dados.put("pais_origem", rs.getString("pais_origem"));
+                    dados.put("idioma_preferido", rs.getString("idioma_preferido"));
+                    dados.put("escolaridade", rs.getString("escolaridade"));
+                    dados.put("experiencia_profissional", rs.getString("experiencia_profissional"));
+                    dados.put("objetivo_profissional", rs.getString("objetivo_profissional"));
+                    dados.put("formulario_preenchido", rs.getBoolean("formulario_preenchido"));
+                    return dados;
+                }
+            }
+    }
+
+    public void salvarFormularioInicial(long usuarioId, String paisOrigem, String idioma,
+                String escolaridade, String experiencia, String objetivo) throws SQLException {
+            if (paisOrigem == null || paisOrigem.trim().isEmpty()
+                    || idioma == null || idioma.trim().isEmpty()
+                    || escolaridade == null || escolaridade.trim().isEmpty()
+                    || objetivo == null || objetivo.trim().isEmpty()) {
+                throw new IllegalArgumentException("Preencha os campos obrigatórios do formulário.");
+            }
+            String sql = "UPDATE app_imigrante SET pais_origem = ?, idioma_preferido = ?, escolaridade = ?, "
+                    + "experiencia_profissional = ?, objetivo_profissional = ?, formulario_preenchido = TRUE, "
+                    + "formulario_preenchido_em = CURRENT_TIMESTAMP "
+                    + "WHERE usuario_id = ? AND formulario_preenchido = FALSE";
+            try (Connection conexao = fabrica.getConexao();
+                 PreparedStatement ps = conexao.prepareStatement(sql)) {
+                ps.setString(1, paisOrigem.trim());
+                ps.setString(2, idioma.trim());
+                ps.setString(3, escolaridade.trim());
+                ps.setString(4, experiencia == null ? null : experiencia.trim());
+                ps.setString(5, objetivo.trim());
+                ps.setLong(6, usuarioId);
+                if (ps.executeUpdate() == 0) {
+                    throw new IllegalArgumentException("O formulário já foi enviado ou não pertence a esta conta.");
+            }
+        }
     }
 
     public Map<String, Object> recuperar(ModuloDominio modulo, long id) throws SQLException {
@@ -64,18 +254,38 @@ public class DominioDAO {
     }
 
     public List<Map<String, Object>> listarOpcoes(CampoDominio campo) throws SQLException {
+        return listarOpcoes(campo, null, 0);
+    }
+
+    public List<Map<String, Object>> listarOpcoes(CampoDominio campo, String perfil, long usuarioId)
+            throws SQLException {
         List<Map<String, Object>> opcoes = new ArrayList<>();
         if (campo.getConsultaOpcoes() == null) {
             return opcoes;
         }
+        String sql = campo.getConsultaOpcoes();
+        boolean filtrarPorUsuario = false;
+        if ("REPRESENTANTE".equals(perfil) && "sala_id".equals(campo.getNome())) {
+            sql = "SELECT id, nome AS rotulo FROM app_sala WHERE representante_id = ? ORDER BY nome";
+            filtrarPorUsuario = true;
+        } else if ("PROFESSOR_VOLUNTARIO".equals(perfil)
+                && "professor_voluntario_id".equals(campo.getNome())) {
+            sql = "SELECT usuario_id AS id, area_conhecimento AS rotulo "
+                    + "FROM app_professor_voluntario WHERE usuario_id = ?";
+            filtrarPorUsuario = true;
+        }
         try (Connection conexao = fabrica.getConexao();
-             PreparedStatement ps = conexao.prepareStatement(campo.getConsultaOpcoes());
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> opcao = new LinkedHashMap<>();
-                opcao.put("id", rs.getObject("id"));
-                opcao.put("rotulo", rs.getString("rotulo"));
-                opcoes.add(opcao);
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+            if (filtrarPorUsuario) {
+                ps.setLong(1, usuarioId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> opcao = new LinkedHashMap<>();
+                    opcao.put("id", rs.getObject("id"));
+                    opcao.put("rotulo", rs.getString("rotulo"));
+                    opcoes.add(opcao);
+                }
             }
         }
         return opcoes;
@@ -121,25 +331,32 @@ public class DominioDAO {
         }
     }
 
-    public long cadastrarImigrante(String nome, String email, String telefone, String senha)
-            throws SQLException {
-        if (nome == null || nome.trim().isEmpty() || email == null || email.trim().isEmpty()
-                || senha == null || senha.length() < 8) {
-            throw new IllegalArgumentException("Informe nome, e-mail e uma senha com pelo menos 8 caracteres.");
-        }
+    public String cadastrarUsuario(String nome, String cpf, String email, String telefone, String senha,
+            String perfil, String areaConhecimento, String experiencia, String formacao,
+            String especialidade, String organizacao, String tipoOrganizacao) throws SQLException {
+        validarCadastro(nome, cpf, email, telefone, senha, perfil);
         String salt = SenhaUtil.gerarSalt();
         try (Connection conexao = fabrica.getConexao()) {
+            boolean autoCommit = conexao.getAutoCommit();
             conexao.setAutoCommit(false);
+            String lockPerfil = null;
             try {
+                lockPerfil = bloquearPrimeiroCadastro(conexao, perfil);
+                boolean autoAprovado = lockPerfil != null && !perfilJaCadastrado(conexao, perfil);
+                String status = "IMIGRANTE".equals(perfil) || autoAprovado ? "ATIVO" : "PENDENTE";
+                String sql = "INSERT INTO app_usuario "
+                        + "(nome, cpf, email, telefone, senha_hash, senha_salt, status, perfil) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 long usuarioId;
-                String sql = "INSERT INTO app_usuario (nome, email, telefone, senha_hash, senha_salt, status, perfil) "
-                        + "VALUES (?, ?, ?, ?, ?, 'ATIVO', 'IMIGRANTE')";
                 try (PreparedStatement ps = conexao.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
                     ps.setString(1, nome.trim());
-                    ps.setString(2, email.trim());
-                    ps.setString(3, telefone == null || telefone.trim().isEmpty() ? null : telefone.trim());
-                    ps.setString(4, SenhaUtil.gerarHash(senha, salt));
-                    ps.setString(5, salt);
+                    ps.setString(2, cpf.replaceAll("[^0-9]", ""));
+                    ps.setString(3, email.trim().toLowerCase());
+                    ps.setString(4, telefone.trim());
+                    ps.setString(5, SenhaUtil.gerarHash(senha, salt));
+                    ps.setString(6, salt);
+                    ps.setString(7, status);
+                    ps.setString(8, perfil);
                     ps.executeUpdate();
                     try (ResultSet rs = ps.getGeneratedKeys()) {
                         if (!rs.next()) {
@@ -148,18 +365,167 @@ public class DominioDAO {
                         usuarioId = rs.getLong(1);
                     }
                 }
-                try (PreparedStatement ps = conexao.prepareStatement(
-                        "INSERT INTO app_imigrante (usuario_id) VALUES (?)")) {
-                    ps.setLong(1, usuarioId);
-                    ps.executeUpdate();
-                }
+                inserirPerfil(conexao, usuarioId, perfil, areaConhecimento, experiencia, formacao,
+                        especialidade, organizacao, tipoOrganizacao);
                 conexao.commit();
-                return usuarioId;
+                return status;
             } catch (SQLException | RuntimeException e) {
                 conexao.rollback();
                 throw e;
             } finally {
-                conexao.setAutoCommit(true);
+                try {
+                    if (lockPerfil != null) {
+                        liberarBloqueioPrimeiroCadastro(conexao, lockPerfil);
+                    }
+                } finally {
+                    conexao.setAutoCommit(autoCommit);
+                }
+            }
+        }
+    }
+
+    private String bloquearPrimeiroCadastro(Connection conexao, String perfil) throws SQLException {
+        String habilitado = System.getenv("IMIGRANTES_AUTO_APPROVE_FIRST_PROFILES");
+        if (!Boolean.parseBoolean(habilitado) || !perfilElegivelParaTeste(perfil)) {
+            return null;
+        }
+        String nomeBloqueio = "imigrantes:first:" + perfil;
+        try (PreparedStatement ps = conexao.prepareStatement("SELECT GET_LOCK(?, 10)")) {
+            ps.setString(1, nomeBloqueio);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next() || rs.getInt(1) != 1) {
+                    throw new SQLException("Nao foi possivel obter o bloqueio para aprovar o primeiro perfil.");
+                }
+            }
+        }
+        return nomeBloqueio;
+    }
+
+    private void liberarBloqueioPrimeiroCadastro(Connection conexao, String nomeBloqueio)
+            throws SQLException {
+        try (PreparedStatement ps = conexao.prepareStatement("SELECT RELEASE_LOCK(?)")) {
+            ps.setString(1, nomeBloqueio);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next() || rs.getInt(1) != 1) {
+                    throw new SQLException("Nao foi possivel liberar o bloqueio do primeiro perfil.");
+                }
+            }
+        }
+    }
+
+    private boolean perfilJaCadastrado(Connection conexao, String perfil) throws SQLException {
+        try (PreparedStatement ps = conexao.prepareStatement(
+                "SELECT 1 FROM app_usuario WHERE perfil = ? LIMIT 1 FOR UPDATE")) {
+            ps.setString(1, perfil);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private boolean perfilElegivelParaTeste(String perfil) {
+        return "PROFESSOR_FORMADO".equals(perfil) || "PROFESSOR_VOLUNTARIO".equals(perfil)
+                || "REPRESENTANTE".equals(perfil);
+    }
+
+    private void validarCadastro(String nome, String cpf, String email, String telefone, String senha,
+            String perfil) {
+        if (nome == null || nome.trim().length() < 3 || nome.trim().length() > 150) {
+            throw new IllegalArgumentException("Informe seu nome completo.");
+        }
+        if (!cpfValido(cpf)) {
+            throw new IllegalArgumentException("Informe um CPF válido.");
+        }
+        if (email == null || !email.matches("(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$")) {
+            throw new IllegalArgumentException("Informe um endereço de e-mail válido.");
+        }
+        if (telefone == null || telefone.replaceAll("[^0-9]", "").length() < 10) {
+            throw new IllegalArgumentException("Informe um telefone com DDD.");
+        }
+        if (senha == null || senha.length() < 8) {
+            throw new IllegalArgumentException("A senha deve ter pelo menos 8 caracteres.");
+        }
+        if (!"IMIGRANTE".equals(perfil) && !"PROFESSOR_FORMADO".equals(perfil)
+                && !"PROFESSOR_VOLUNTARIO".equals(perfil) && !"REPRESENTANTE".equals(perfil)) {
+            throw new IllegalArgumentException("Selecione um tipo de cadastro válido.");
+        }
+    }
+
+    private boolean cpfValido(String cpf) {
+        if (cpf == null) {
+            return false;
+        }
+        String numeros = cpf.replaceAll("[^0-9]", "");
+        if (numeros.length() != 11 || numeros.matches("(\\d)\\1{10}")) {
+            return false;
+        }
+        int soma = 0;
+        for (int i = 0; i < 9; i++) {
+            soma += (numeros.charAt(i) - '0') * (10 - i);
+        }
+        int digito = (soma * 10) % 11;
+        if (digito == 10) {
+            digito = 0;
+        }
+        if (digito != numeros.charAt(9) - '0') {
+            return false;
+        }
+        soma = 0;
+        for (int i = 0; i < 10; i++) {
+            soma += (numeros.charAt(i) - '0') * (11 - i);
+        }
+        digito = (soma * 10) % 11;
+        if (digito == 10) {
+            digito = 0;
+        }
+        return digito == numeros.charAt(10) - '0';
+    }
+
+    private void inserirPerfil(Connection conexao, long usuarioId, String perfil, String areaConhecimento,
+            String experiencia, String formacao, String especialidade, String organizacao,
+            String tipoOrganizacao) throws SQLException {
+        String sql;
+        if ("IMIGRANTE".equals(perfil)) {
+            sql = "INSERT INTO app_imigrante (usuario_id) VALUES (?)";
+            try (PreparedStatement ps = conexao.prepareStatement(sql)) {
+                ps.setLong(1, usuarioId);
+                ps.executeUpdate();
+            }
+        } else if ("PROFESSOR_VOLUNTARIO".equals(perfil)) {
+            if (areaConhecimento == null || areaConhecimento.trim().isEmpty()) {
+                throw new IllegalArgumentException("Informe sua área de conhecimento.");
+            }
+            sql = "INSERT INTO app_professor_voluntario (usuario_id, area_conhecimento, experiencia) "
+                    + "VALUES (?, ?, ?)";
+            try (PreparedStatement ps = conexao.prepareStatement(sql)) {
+                ps.setLong(1, usuarioId);
+                ps.setString(2, areaConhecimento.trim());
+                ps.setString(3, experiencia == null ? null : experiencia.trim());
+                ps.executeUpdate();
+            }
+        } else if ("PROFESSOR_FORMADO".equals(perfil)) {
+            if (formacao == null || formacao.trim().isEmpty() || especialidade == null
+                    || especialidade.trim().isEmpty()) {
+                throw new IllegalArgumentException("Informe sua formação e especialidade.");
+            }
+            sql = "INSERT INTO app_professor_formado (usuario_id, formacao, especialidade) VALUES (?, ?, ?)";
+            try (PreparedStatement ps = conexao.prepareStatement(sql)) {
+                ps.setLong(1, usuarioId);
+                ps.setString(2, formacao.trim());
+                ps.setString(3, especialidade.trim());
+                ps.executeUpdate();
+            }
+        } else {
+            if (organizacao == null || organizacao.trim().isEmpty()
+                    || (!"INSTITUICAO".equals(tipoOrganizacao) && !"ONG".equals(tipoOrganizacao))) {
+                throw new IllegalArgumentException("Informe o nome e o tipo da instituição ou ONG.");
+            }
+            sql = "INSERT INTO app_representante (usuario_id, instituicao, tipo_organizacao) VALUES (?, ?, ?)";
+            try (PreparedStatement ps = conexao.prepareStatement(sql)) {
+                ps.setLong(1, usuarioId);
+                ps.setString(2, organizacao.trim());
+                ps.setString(3, tipoOrganizacao);
+                ps.executeUpdate();
             }
         }
     }
@@ -300,11 +666,12 @@ public class DominioDAO {
     }
 
     public Map<String, Object> autenticar(String email, String senha) throws SQLException {
-        String sql = "SELECT id, nome, email, perfil, senha_hash, senha_salt FROM app_usuario "
-                + "WHERE email = ? AND status = 'ATIVO'";
+        String sql = "SELECT u.id, u.nome, u.email, u.perfil, u.status, u.senha_hash, u.senha_salt, "
+                + "COALESCE(i.formulario_preenchido, TRUE) AS formulario_preenchido "
+                + "FROM app_usuario u LEFT JOIN app_imigrante i ON i.usuario_id = u.id WHERE u.email = ?";
         try (Connection conexao = fabrica.getConexao();
              PreparedStatement ps = conexao.prepareStatement(sql)) {
-            ps.setString(1, email);
+            ps.setString(1, email.trim().toLowerCase());
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next() || rs.getString("senha_hash") == null
                         || !SenhaUtil.verificar(senha, rs.getString("senha_salt"), rs.getString("senha_hash"))) {
@@ -315,7 +682,29 @@ public class DominioDAO {
                 usuario.put("nome", rs.getString("nome"));
                 usuario.put("email", rs.getString("email"));
                 usuario.put("perfil", rs.getString("perfil"));
+                usuario.put("status", rs.getString("status"));
+                usuario.put("formularioPreenchido", rs.getBoolean("formulario_preenchido"));
                 return usuario;
+            }
+        }
+    }
+
+    public Map<String, Object> obterEstadoConta(long usuarioId) throws SQLException {
+        String sql = "SELECT u.status, u.perfil, COALESCE(i.formulario_preenchido, TRUE) "
+                + "AS formulario_preenchido FROM app_usuario u "
+                + "LEFT JOIN app_imigrante i ON i.usuario_id = u.id WHERE u.id = ?";
+        try (Connection conexao = fabrica.getConexao();
+             PreparedStatement ps = conexao.prepareStatement(sql)) {
+            ps.setLong(1, usuarioId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                Map<String, Object> estado = new LinkedHashMap<>();
+                estado.put("status", rs.getString("status"));
+                estado.put("perfil", rs.getString("perfil"));
+                estado.put("formularioPreenchido", rs.getBoolean("formulario_preenchido"));
+                return estado;
             }
         }
     }
@@ -650,14 +1039,8 @@ public class DominioDAO {
     private static List<ModuloDominio> criarModulos() {
         List<ModuloDominio> modulos = new ArrayList<>();
         modulos.add(modulo("usuarios", "Usuarios", "app_usuario", "id", false,
-                Arrays.asList("id", "nome", "email", "telefone", "status", "perfil"),
-                campo("nome", "Nome", "text", true),
-                campo("email", "E-mail", "email", true),
-                campo("telefone", "Telefone", "text", false),
-                campo("senha", "Senha", "password", true),
-                opcoes("status", "Status", true, "ATIVO", "INATIVO", "PENDENTE"),
-                opcoes("perfil", "Perfil", true, "IMIGRANTE", "PROFESSOR_VOLUNTARIO",
-                        "PROFESSOR_FORMADO", "REPRESENTANTE")));
+                Arrays.asList("id", "nome", "email", "status", "perfil"),
+                opcoes("status", "Status", true, "ATIVO", "INATIVO", "PENDENTE")));
         modulos.add(modulo("imigrantes", "Imigrantes", "app_imigrante", "usuario_id", false,
                 Arrays.asList("usuario_id", "pais_origem", "idioma_preferido", "status_migratorio"),
                 relacao("usuario_id", "Usuario", true,

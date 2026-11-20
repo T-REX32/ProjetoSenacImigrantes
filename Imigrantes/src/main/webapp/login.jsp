@@ -10,29 +10,51 @@
 </head>
 <body>
     <main class="auth-shell">
-        <section class="auth-card">
-            <a class="brand" href="${pageContext.request.contextPath}/">Imigrantes</a>
-            <h1>Bem-vindo</h1>
-            <p class="muted">Acesse a plataforma de ensino e acolhimento.</p>
-            <c:if test="${param.cadastro == 'ok'}">
-                <div class="notice success">Conta criada. Entre com seu e-mail e senha.</div>
-            </c:if>
-            <c:if test="${not empty erro}">
-                <div class="notice error"><c:out value="${erro}"/></div>
-            </c:if>
-            <form action="${pageContext.request.contextPath}/login" method="post">
-                <div class="field">
-                    <label for="email">E-mail</label>
-                    <input id="email" name="email" type="email" autocomplete="username" required>
+        <div class="auth-layout">
+            <aside class="auth-intro">
+                <a class="brand" href="${pageContext.request.contextPath}/">Imigrantes</a>
+                <div class="auth-intro-copy">
+                    <span class="eyebrow">Que bom ter você de volta</span>
+                    <h2>Seu próximo capítulo começa aqui.</h2>
+                    <p>Entre para continuar sua jornada de aprendizagem e encontrar novas oportunidades.</p>
                 </div>
-                <div class="field">
-                    <label for="senha">Senha</label>
-                    <input id="senha" name="senha" type="password" autocomplete="current-password" required>
-                </div>
-                <button type="submit">Entrar</button>
-            </form>
-            <p class="auth-foot">Ainda nao tem conta? <a href="${pageContext.request.contextPath}/cadastro">Cadastre-se</a></p>
-        </section>
+                <p class="auth-intro-foot">Aprender também é encontrar novos caminhos.</p>
+            </aside>
+            <section class="auth-card">
+                <h1>Acesse sua conta</h1>
+                <p class="muted">Informe seus dados para continuar.</p>
+                <c:if test="${param.cadastro == 'ok'}">
+                    <div class="notice success" role="status">Conta criada. Entre com seu e-mail e senha para responder ao formulário inicial.</div>
+                </c:if>
+                <c:if test="${param.cadastro == 'pendente'}">
+                    <div class="notice success" role="status">Solicitação recebida. Seu perfil ficará disponível após a aprovação da equipe.</div>
+                </c:if>
+                <c:if test="${param.cadastro == 'aprovado'}">
+                    <div class="notice success" role="status">Cadastro aprovado para o primeiro acesso de teste. Entre com seu e-mail e senha.</div>
+                </c:if>
+                <c:if test="${param.acesso == 'indisponivel'}">
+                    <div class="notice error" role="alert">Esta conta não está ativa. Entre em contato com a equipe responsável.</div>
+                </c:if>
+                <c:if test="${not empty erro}">
+                    <div class="notice error" role="alert"><c:out value="${erro}"/></div>
+                </c:if>
+                <c:if test="${not empty informacao}">
+                    <div class="notice success" role="status"><c:out value="${informacao}"/></div>
+                </c:if>
+                <form action="${pageContext.request.contextPath}/login" method="post">
+                    <div class="field">
+                        <label for="email">E-mail</label>
+                        <input id="email" name="email" type="email" autocomplete="username" placeholder="voce@exemplo.com" required>
+                    </div>
+                    <div class="field">
+                        <label for="senha">Senha</label>
+                        <input id="senha" name="senha" type="password" autocomplete="current-password" placeholder="Sua senha" required>
+                    </div>
+                    <button type="submit">Entrar na plataforma</button>
+                </form>
+                <p class="auth-foot">Ainda não tem conta? <a href="${pageContext.request.contextPath}/cadastro">Criar conta gratuita</a></p>
+            </section>
+        </div>
     </main>
 </body>
 </html>

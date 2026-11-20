@@ -10,19 +10,34 @@
 </head>
 <body>
     <main class="auth-shell">
-        <section class="auth-card">
-            <a class="brand" href="${pageContext.request.contextPath}/">Imigrantes</a>
-            <h1>Criar conta</h1>
-            <c:if test="${not empty erro}"><div class="notice error"><c:out value="${erro}"/></div></c:if>
-            <form action="${pageContext.request.contextPath}/usuario/inserir" method="post">
-                <div class="field"><label for="nome">Nome</label><input id="nome" name="nome" maxlength="150" required></div>
-                <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" maxlength="255" required></div>
-                <div class="field"><label for="telefone">Telefone</label><input id="telefone" name="telefone" type="tel" maxlength="40"></div>
-                <div class="field"><label for="senha">Senha (minimo 8 caracteres)</label><input id="senha" name="senha" type="password" minlength="8" required></div>
-                <button type="submit">Criar conta</button>
-            </form>
-            <p class="auth-foot"><a href="${pageContext.request.contextPath}/login">Voltar para entrar</a></p>
-        </section>
+        <div class="auth-layout">
+            <aside class="auth-intro">
+                <a class="brand" href="${pageContext.request.contextPath}/">Imigrantes</a>
+                <div class="auth-intro-copy">
+                    <span class="eyebrow">Um novo começo</span>
+                    <h2>Conhecimento abre portas.</h2>
+                    <p>Faça parte de uma comunidade que acredita no aprendizado, no acolhimento e nas oportunidades.</p>
+                </div>
+                <p class="auth-intro-foot">Sua jornada tem lugar por aqui.</p>
+            </aside>
+            <section class="auth-card">
+                <h1>Crie sua conta</h1>
+                <p class="muted">Leva só um instante para começar.</p>
+                <c:if test="${not empty erro}"><div class="notice error" role="alert"><c:out value="${erro}"/></div></c:if>
+                <form action="${pageContext.request.contextPath}/usuario/inserir" method="post">
+                    <div class="field"><label for="nome">Nome completo</label><input id="nome" name="nome" maxlength="150" autocomplete="name" required></div>
+                    <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" maxlength="255" autocomplete="email" required></div>
+                    <div class="field"><label for="telefone">Telefone <span class="form-hint">Opcional</span></label><input id="telefone" name="telefone" type="tel" maxlength="40" autocomplete="tel"></div>
+                    <div class="field">
+                        <label for="senha">Crie uma senha</label>
+                        <input id="senha" name="senha" type="password" minlength="8" autocomplete="new-password" aria-describedby="senha-ajuda" required>
+                        <span class="form-hint" id="senha-ajuda">Use no mínimo 8 caracteres.</span>
+                    </div>
+                    <button type="submit">Criar minha conta</button>
+                </form>
+                <p class="auth-foot">Já tem uma conta? <a href="${pageContext.request.contextPath}/login">Entrar</a></p>
+            </section>
+        </div>
     </main>
 </body>
 </html>

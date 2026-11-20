@@ -26,15 +26,38 @@ public class CadastroServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
+        String perfil = request.getParameter("perfil");
+        String senha = request.getParameter("senha");
+        if (senha == null || !senha.equals(request.getParameter("confirmarSenha"))) {
+            request.setAttribute("erro", "As senhas informadas não são iguais.");
+            request.getRequestDispatcher("/cadastro.jsp").forward(request, response);
+            return;
+        }
         try {
-            dao.cadastrarImigrante(request.getParameter("nome"), request.getParameter("email"),
-                    request.getParameter("telefone"), request.getParameter("senha"));
-            response.sendRedirect(request.getContextPath() + "/login?cadastro=ok");
+            String status = dao.cadastrarUsuario(request.getParameter("nome"), request.getParameter("cpf"),
+                    request.getParameter("email"), request.getParameter("telefone"), senha, perfil,
+                    request.getParameter("areaConhecimento"), request.getParameter("experiencia"),
+                    request.getParameter("formacao"), request.getParameter("especialidade"),
+                    request.getParameter("organizacao"), request.getParameter("tipoOrganizacao"));
+            String destino;
+            if ("IMIGRANTE".equals(perfil)) {
+                destino = "/login?cadastro=ok";
+            } else if ("ATIVO".equals(status)) {
+                destino = "/login?cadastro=aprovado";
+            } else {
+                destino = "/login?cadastro=pendente";
+            }
+            response.sendRedirect(request.getContextPath() + destino);
         } catch (IllegalArgumentException e) {
             request.setAttribute("erro", e.getMessage());
             request.getRequestDispatcher("/cadastro.jsp").forward(request, response);
         } catch (SQLException e) {
-            throw new ServletException("Nao foi possivel criar a conta. Verifique se o e-mail ja esta cadastrado.", e);
+            if (e.getErrorCode() == 1062) {
+                request.setAttribute("erro", "Este e-mail ou CPF já está cadastrado.");
+                request.getRequestDispatcher("/cadastro.jsp").forward(request, response);
+                return;
+            }
+            throw new ServletException("Não foi possível criar a conta.", e);
         }
     }
 }

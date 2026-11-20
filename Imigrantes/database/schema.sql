@@ -8,13 +8,15 @@ CREATE TABLE IF NOT EXISTS app_usuario (
     id BIGINT NOT NULL AUTO_INCREMENT,
     nome VARCHAR(150) NOT NULL,
     email VARCHAR(255) NOT NULL,
+    cpf VARCHAR(14) NOT NULL,
     telefone VARCHAR(40),
     senha_hash VARCHAR(255),
     senha_salt VARCHAR(64),
     status VARCHAR(20) NOT NULL DEFAULT 'ATIVO',
     perfil VARCHAR(30) NOT NULL DEFAULT 'IMIGRANTE',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_app_usuario_email (email)
+    UNIQUE KEY uk_app_usuario_email (email),
+    UNIQUE KEY uk_app_usuario_cpf (cpf)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS app_imigrante (
@@ -22,6 +24,11 @@ CREATE TABLE IF NOT EXISTS app_imigrante (
     pais_origem VARCHAR(100),
     idioma_preferido VARCHAR(100),
     status_migratorio VARCHAR(100),
+    escolaridade VARCHAR(120),
+    experiencia_profissional TEXT,
+    objetivo_profissional TEXT,
+    formulario_preenchido BOOLEAN NOT NULL DEFAULT FALSE,
+    formulario_preenchido_em TIMESTAMP NULL,
     PRIMARY KEY (usuario_id),
     CONSTRAINT fk_app_imigrante_usuario FOREIGN KEY (usuario_id)
         REFERENCES app_usuario (id) ON DELETE CASCADE
@@ -48,8 +55,20 @@ CREATE TABLE IF NOT EXISTS app_professor_formado (
 CREATE TABLE IF NOT EXISTS app_representante (
     usuario_id BIGINT NOT NULL,
     instituicao VARCHAR(150),
+    tipo_organizacao VARCHAR(20) NOT NULL DEFAULT 'INSTITUICAO',
     PRIMARY KEY (usuario_id),
     CONSTRAINT fk_app_representante_usuario FOREIGN KEY (usuario_id)
+        REFERENCES app_usuario (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS app_auditoria_perfil (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    autor_id BIGINT NOT NULL,
+    campo_alterado VARCHAR(40) NOT NULL,
+    alterado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_app_auditoria_autor_data (autor_id, alterado_em),
+    CONSTRAINT fk_app_auditoria_autor FOREIGN KEY (autor_id)
         REFERENCES app_usuario (id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 

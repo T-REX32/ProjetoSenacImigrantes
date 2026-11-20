@@ -29,4 +29,12 @@ public class ModuloDominio {
     public boolean isSomenteLeitura() { return somenteLeitura; }
     public List<String> getColunas() { return colunas; }
     public List<CampoDominio> getCampos() { return campos; }
+
+    public String getRotuloColuna(String coluna) {
+        if ("id".equals(coluna)) {
+            return "ID";
+        }
+        String rotulo = coluna.replace('_', ' ');
+        return rotulo.substring(0, 1).toUpperCase() + rotulo.substring(1);
+    }
 }
