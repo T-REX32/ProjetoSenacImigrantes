@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><c:choose><c:when test="${not empty curso}">Editar curso</c:when><c:otherwise>Novo curso</c:otherwise></c:choose> | Imigrantes</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css?v=20261124-1">
 </head>
 <body>
     <header class="topbar">

@@ -6,7 +6,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Painel | Imigrantes</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css">
+    <link rel="preload" as="image" href="${pageContext.request.contextPath}/assets/images/comunidade-aprendizado.jpg">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css?v=20261124-1">
 </head>
 <body>
     <header class="topbar">
@@ -17,8 +18,8 @@
         </div>
     </header>
     <main class="page">
-        <div class="page-heading">
-            <div>
+        <section class="dashboard-welcome">
+            <div class="dashboard-welcome-copy">
                 <span class="eyebrow">Área de <c:choose>
                     <c:when test="${sessionScope.usuarioLogado.perfil == 'IMIGRANTE'}">aprendizagem</c:when>
                     <c:when test="${sessionScope.usuarioLogado.perfil == 'PROFESSOR_FORMADO'}">educação</c:when>
@@ -26,8 +27,8 @@
                     <c:when test="${sessionScope.usuarioLogado.perfil == 'REPRESENTANTE'}">instituição parceira</c:when>
                     <c:otherwise>administração</c:otherwise>
                 </c:choose></span>
-                <h1>Bem-vindo, <c:out value="${sessionScope.usuarioLogado.nome}"/>.</h1>
-                <p class="muted">
+                <h1>Que bom ter você aqui, <c:out value="${sessionScope.usuarioLogado.nome}"/>.</h1>
+                <p>
                     <c:choose>
                         <c:when test="${sessionScope.usuarioLogado.perfil == 'IMIGRANTE'}">Encontre trilhas e aulas disponíveis para sua jornada.</c:when>
                         <c:when test="${sessionScope.usuarioLogado.perfil == 'PROFESSOR_FORMADO'}">Apoie os educadores e organize trilhas de aprendizagem.</c:when>
@@ -36,12 +37,28 @@
                         <c:otherwise>Gerencie usuários, cadastros e atividades da plataforma.</c:otherwise>
                     </c:choose>
                 </p>
+                <a class="dashboard-profile-link" href="${pageContext.request.contextPath}/perfil">Acessar meu perfil <span aria-hidden="true">→</span></a>
             </div>
-            <a class="button secondary" href="${pageContext.request.contextPath}/perfil">Meu perfil</a>
-        </div>
+            <div class="dashboard-welcome-art">
+                <img src="${pageContext.request.contextPath}/assets/images/comunidade-aprendizado.jpg"
+                     alt="Pessoas reunidas em torno de computadores, colaborando em uma atividade de aprendizagem."
+                     width="1600" height="1350">
+                <div class="dashboard-art-note">
+                    <span class="dashboard-art-icon" aria-hidden="true">✦</span>
+                    <span><strong>Aprender em comunidade</strong><small>Conhecimento aproxima pessoas.</small></span>
+                </div>
+            </div>
+        </section>
         <c:if test="${param.boasVindas == '1'}">
             <div class="notice success" role="status">Formulário recebido. Sua área de aprendizagem está pronta.</div>
         </c:if>
+        <div class="dashboard-section-heading">
+            <div>
+                <span class="eyebrow">Seu espaço</span>
+                <h2>O que vamos fazer hoje?</h2>
+            </div>
+            <p>Escolha uma área para continuar sua jornada.</p>
+        </div>
         <div class="grid">
             <c:forEach var="modulo" items="${modulos}" varStatus="estado">
                 <a class="card module-card" href="${pageContext.request.contextPath}/gestao/${modulo.codigo}">

@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Aprendizagem, acolhimento e oportunidades para pessoas imigrantes construírem novos caminhos.">
-    <meta name="theme-color" content="#f8f7f2">
+    <meta name="theme-color" content="#faf8ff">
     <title>Imigrantes | Aprender, pertencer, avançar</title>
     <link rel="preload" as="image" href="${pageContext.request.contextPath}/assets/images/comunidade-aprendizado.jpg">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css?v=20261119-2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css?v=20261124-1">
 </head>
 <body class="landing-body">
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
