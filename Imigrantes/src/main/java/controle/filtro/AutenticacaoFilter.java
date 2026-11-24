@@ -87,7 +87,7 @@ public class AutenticacaoFilter implements Filter {
                     return;
                 }
             } else if (isGestaoAula(path)
-                    && !"ADMINISTRADOR".equals(perfil)) {
+                    && !PermissaoUsuario.podeCriarAula(perfil)) {
                 httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return;
             }

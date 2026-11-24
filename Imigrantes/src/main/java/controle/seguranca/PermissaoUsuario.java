@@ -16,11 +16,12 @@ public final class PermissaoUsuario {
     private static final Map<String, Set<String>> EDICAO = new HashMap<>();
 
     static {
-        MODULOS.put("IMIGRANTE", conjunto("trilhas", "aulas", "anuncios"));
-        MODULOS.put("PROFESSOR_FORMADO", conjunto("professores-voluntarios", "trilhas"));
-        MODULOS.put("PROFESSOR_VOLUNTARIO", conjunto("aulas", "salas", "horarios"));
+        MODULOS.put("IMIGRANTE", conjunto("trilhas", "aulas", "inscricoes", "progressos", "certificados", "anuncios"));
+        MODULOS.put("PROFESSOR_FORMADO", conjunto("professores-voluntarios", "trilhas", "avaliacoes", "aulas"));
+        MODULOS.put("PROFESSOR_VOLUNTARIO", conjunto("aulas", "salas", "horarios", "avaliacoes"));
         MODULOS.put("REPRESENTANTE", conjunto("salas", "horarios"));
 
+        EDICAO.put("IMIGRANTE", conjunto("inscricoes"));
         EDICAO.put("PROFESSOR_FORMADO", conjunto("trilhas"));
         EDICAO.put("PROFESSOR_VOLUNTARIO", conjunto("aulas"));
         EDICAO.put("REPRESENTANTE", conjunto("salas", "horarios"));
@@ -41,6 +42,9 @@ public final class PermissaoUsuario {
         if ("PROFESSOR_FORMADO".equals(perfil) && "trilhas".equals(modulo)) {
             return true;
         }
+        if ("IMIGRANTE".equals(perfil) && "inscricoes".equals(modulo)) {
+            return id == 0;
+        }
         return id == 0 && EDICAO.containsKey(perfil) && EDICAO.get(perfil).contains(modulo);
     }
 
@@ -50,7 +54,11 @@ public final class PermissaoUsuario {
 
     public static boolean podeAcessarAulas(String perfil) {
         return "ADMINISTRADOR".equals(perfil) || "PROFESSOR_FORMADO".equals(perfil)
-                || "PROFESSOR_VOLUNTARIO".equals(perfil);
+                || "PROFESSOR_VOLUNTARIO".equals(perfil) || "IMIGRANTE".equals(perfil);
+    }
+
+    public static boolean podeCriarAula(String perfil) {
+        return "ADMINISTRADOR".equals(perfil) || "PROFESSOR_VOLUNTARIO".equals(perfil);
     }
 
     public static boolean podeCriarConta(String perfil) {

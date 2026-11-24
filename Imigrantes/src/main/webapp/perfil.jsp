@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -31,6 +32,13 @@
             <div class="notice error" role="alert"><c:out value="${erro}"/></div>
         </c:if>
         <section class="panel">
+            <div class="profile-summary">
+                <div class="profile-avatar"><c:out value="${fn:substring(perfil.nome, 0, 1)}"/></div>
+                <div>
+                    <strong><c:out value="${perfil.nome}"/></strong>
+                    <span><c:out value="${sessionScope.usuarioLogado.perfil}"/> • Conta ativa</span>
+                </div>
+            </div>
             <form action="${pageContext.request.contextPath}/perfil" method="post" id="perfil-form">
                 <div class="field">
                     <label for="nome">Nome completo</label>

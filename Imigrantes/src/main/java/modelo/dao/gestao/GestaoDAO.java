@@ -53,6 +53,12 @@ public class GestaoDAO {
         } else if ("IMIGRANTE".equals(perfil) && "aulas".equals(modulo.getCodigo())) {
             filtro = " WHERE disponivel = TRUE AND (trilha_id IS NULL OR trilha_id IN "
                     + "(SELECT id FROM app_trilha WHERE publicada = TRUE))";
+        } else if ("IMIGRANTE".equals(perfil) && "inscricoes".equals(modulo.getCodigo())) {
+            filtro = " WHERE imigrante_id = ?";
+        } else if ("IMIGRANTE".equals(perfil) && "progressos".equals(modulo.getCodigo())) {
+            filtro = " WHERE inscricao_id IN (SELECT id FROM app_inscricao WHERE imigrante_id = ?)";
+        } else if ("IMIGRANTE".equals(perfil) && "certificados".equals(modulo.getCodigo())) {
+            filtro = " WHERE inscricao_id IN (SELECT id FROM app_inscricao WHERE imigrante_id = ?)";
         } else if ("IMIGRANTE".equals(perfil) && "anuncios".equals(modulo.getCodigo())) {
             filtro = " WHERE ativo = TRUE";
         } else if ("PROFESSOR_VOLUNTARIO".equals(perfil) && "aulas".equals(modulo.getCodigo())) {
@@ -67,6 +73,8 @@ public class GestaoDAO {
         try (Connection conexao = fabrica.getConexao();
              PreparedStatement ps = conexao.prepareStatement(sql)) {
             if (!filtro.isEmpty() && !"IMIGRANTE".equals(perfil)) {
+                ps.setLong(1, usuarioId);
+            } else if (filtro.contains("?")) {
                 ps.setLong(1, usuarioId);
             }
             try (ResultSet rs = ps.executeQuery()) {

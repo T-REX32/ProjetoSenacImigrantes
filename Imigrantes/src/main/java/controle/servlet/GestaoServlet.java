@@ -120,6 +120,11 @@ public class GestaoServlet extends HttpServlet {
                         && "salas".equals(codigo)) {
                     valores.put("representante_id", String.valueOf(usuarioId));
                 }
+                if (registroId == 0 && "IMIGRANTE".equals(perfilUsuario)
+                        && "inscricoes".equals(codigo)) {
+                    valores.put("imigrante_id", String.valueOf(((Number) usuario.get("id")).longValue()));
+                    valores.put("data_inscricao", java.time.LocalDate.now().toString());
+                }
                 if ("REPRESENTANTE".equals(perfilUsuario) && "horarios".equals(codigo)
                         && !dao.representantePossuiSala(usuarioId,
                                 parseId(valores.get("sala_id")))) {

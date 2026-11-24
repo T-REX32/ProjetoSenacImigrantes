@@ -24,7 +24,9 @@
                 <h1>Aulas</h1>
                 <p class="muted">Consulte e gerencie as aulas cadastradas.</p>
             </div>
-            <a class="button" href="${pageContext.request.contextPath}/nova-aula">Nova aula</a>
+            <c:if test="${sessionScope.usuarioLogado.perfil == 'ADMINISTRADOR' or sessionScope.usuarioLogado.perfil == 'PROFESSOR_VOLUNTARIO'}">
+                <a class="button" href="${pageContext.request.contextPath}/nova-aula">Nova aula</a>
+            </c:if>
         </div>
         <section class="panel">
             <div class="table-wrap">
@@ -40,13 +42,15 @@
                                 <td><c:out value="${aula.conteudo}"/></td>
                                 <td><c:out value="${aula.duracaoMinutos}"/> min</td>
                                 <td class="action-cell">
-                                    <div class="actions">
-                                        <a class="button secondary small" href="${pageContext.request.contextPath}/editar-aula?id=${aula.id}">Editar</a>
-                                        <form class="inline-form" action="${pageContext.request.contextPath}/deletar-aula" method="post" onsubmit="return confirm('Excluir esta aula?');">
-                                            <input type="hidden" name="id" value="<c:out value='${aula.id}'/>">
-                                            <button class="danger small" type="submit">Excluir</button>
-                                        </form>
-                                    </div>
+                                    <c:if test="${sessionScope.usuarioLogado.perfil == 'ADMINISTRADOR' or sessionScope.usuarioLogado.perfil == 'PROFESSOR_VOLUNTARIO'}">
+                                        <div class="actions">
+                                            <a class="button secondary small" href="${pageContext.request.contextPath}/editar-aula?id=${aula.id}">Editar</a>
+                                            <form class="inline-form" action="${pageContext.request.contextPath}/deletar-aula" method="post" onsubmit="return confirm('Excluir esta aula?');">
+                                                <input type="hidden" name="id" value="<c:out value='${aula.id}'/>">
+                                                <button class="danger small" type="submit">Excluir</button>
+                                            </form>
+                                        </div>
+                                    </c:if>
                                 </td>
                             </tr>
                         </c:forEach>

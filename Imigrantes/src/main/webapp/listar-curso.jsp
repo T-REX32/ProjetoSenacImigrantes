@@ -24,7 +24,9 @@
                 <h1>Cursos</h1>
                 <p class="muted">Consulte e gerencie os cursos cadastrados.</p>
             </div>
-            <a class="button" href="${pageContext.request.contextPath}/curso/novo">Novo curso</a>
+            <c:if test="${sessionScope.usuarioLogado.perfil == 'ADMINISTRADOR' or sessionScope.usuarioLogado.perfil == 'PROFESSOR_FORMADO'}">
+                <a class="button" href="${pageContext.request.contextPath}/curso/novo">Novo curso</a>
+            </c:if>
         </div>
         <section class="panel">
             <div class="table-wrap">
@@ -40,6 +42,7 @@
                                 <td><c:out value="${curso.descricao}"/></td>
                                 <td><c:out value="${curso.quantTurma}"/></td>
                                 <td class="action-cell">
+                                    <c:if test="${sessionScope.usuarioLogado.perfil == 'ADMINISTRADOR' or sessionScope.usuarioLogado.perfil == 'PROFESSOR_FORMADO'}">
                                     <div class="actions">
                                         <a class="button secondary small" href="${pageContext.request.contextPath}/curso/editar?id=${curso.id}">Editar</a>
                                         <form class="inline-form" action="${pageContext.request.contextPath}/curso/deletar" method="post" onsubmit="return confirm('Excluir este curso?');">
@@ -47,6 +50,7 @@
                                             <button class="danger small" type="submit">Excluir</button>
                                         </form>
                                     </div>
+                                    </c:if>
                                 </td>
                             </tr>
                         </c:forEach>

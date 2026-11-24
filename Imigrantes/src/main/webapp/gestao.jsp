@@ -21,9 +21,20 @@
         <div class="page-heading">
             <div>
                 <a href="${pageContext.request.contextPath}/gestao">Painel</a>
-                <span class="eyebrow">Administração</span>
+                <span class="eyebrow"><c:choose>
+                    <c:when test="${sessionScope.usuarioLogado.perfil == 'IMIGRANTE'}">Minha aprendizagem</c:when>
+                    <c:when test="${sessionScope.usuarioLogado.perfil == 'PROFESSOR_FORMADO'}">Coordenação educacional</c:when>
+                    <c:when test="${sessionScope.usuarioLogado.perfil == 'PROFESSOR_VOLUNTARIO'}">Meu voluntariado</c:when>
+                    <c:when test="${sessionScope.usuarioLogado.perfil == 'REPRESENTANTE'}">Minha instituição</c:when>
+                    <c:otherwise>Área administrativa</c:otherwise>
+                </c:choose></span>
                 <h1><c:out value="${modulo.rotulo}"/></h1>
-                <p class="muted">Consulte e mantenha as informações desta área.</p>
+                <p class="muted"><c:choose>
+                    <c:when test="${sessionScope.usuarioLogado.perfil == 'IMIGRANTE'}">Conteúdos disponíveis e seu andamento nesta área.</c:when>
+                    <c:when test="${sessionScope.usuarioLogado.perfil == 'PROFESSOR_VOLUNTARIO'}">Gerencie apenas as aulas atribuídas à sua conta.</c:when>
+                    <c:when test="${sessionScope.usuarioLogado.perfil == 'REPRESENTANTE'}">Gerencie os espaços e horários da sua instituição.</c:when>
+                    <c:otherwise>Consulte e mantenha as informações desta área.</c:otherwise>
+                </c:choose></p>
             </div>
             <c:if test="${podeEditar and not modoFormulario}">
                 <a class="button" href="${pageContext.request.contextPath}/gestao/${modulo.codigo}?acao=novo">Novo registro</a>
@@ -48,7 +59,7 @@
                             <c:if test="${empty valores}">
                                 <c:set var="atual" value="${registro[campo.nome]}"/>
                             </c:if>
-                            <c:if test="${not (sessionScope.usuarioLogado.perfil == 'PROFESSOR_VOLUNTARIO' and campo.nome == 'professor_voluntario_id') and not (sessionScope.usuarioLogado.perfil == 'REPRESENTANTE' and campo.nome == 'representante_id')}">
+                            <c:if test="${not (sessionScope.usuarioLogado.perfil == 'PROFESSOR_VOLUNTARIO' and campo.nome == 'professor_voluntario_id') and not (sessionScope.usuarioLogado.perfil == 'REPRESENTANTE' and campo.nome == 'representante_id') and not (sessionScope.usuarioLogado.perfil == 'IMIGRANTE' and (campo.nome == 'imigrante_id' or campo.nome == 'data_inscricao'))}">
                             <div class="field ${campo.tipo == 'textarea' ? 'full' : ''} ${campo.tipo == 'checkbox' ? 'check-field' : ''}">
                                 <c:choose>
                                     <c:when test="${campo.tipo == 'checkbox'}">
@@ -105,7 +116,7 @@
             </section>
         </c:if>
 
-        <c:if test="${modulo.codigo == 'inscricoes'}">
+        <c:if test="${modulo.codigo == 'inscricoes' and sessionScope.usuarioLogado.perfil != 'IMIGRANTE'}">
             <section class="panel">
                 <h2>Registrar aula concluída</h2>
                 <p class="muted">O progresso é atualizado automaticamente. Ao concluir todas as aulas disponíveis, o certificado é emitido.</p>
